@@ -44,8 +44,10 @@ sudo -u jeeves -H bash -c '
 set -e
 cd /opt/jeeves
 bin/uv venv --python 3.12 .venv
-bin/uv pip install --python .venv/bin/python /opt/jeeves/src
-.venv/bin/python -c "import jeeves, aiogram; print(\"ok\", aiogram.__version__)"
+# --only-binary greenlet: на старых системах (glibc 2.17) нет свежего greenlet в бинарном виде,
+# а gcc 4.8 его не соберёт; uv подберёт версию с готовым пакетом
+bin/uv pip install --python .venv/bin/python --only-binary greenlet /opt/jeeves/src
+.venv/bin/python -c "import jeeves, aiogram, greenlet; print(\"ok\", aiogram.__version__, greenlet.__version__)"
 '
 ```
 
@@ -132,7 +134,7 @@ journalctl -u jeeves -f
 
 ```bash
 cd /opt/jeeves/src && sudo -u jeeves git pull
-sudo -u jeeves -H bash -c 'cd /opt/jeeves && bin/uv pip install --python .venv/bin/python /opt/jeeves/src'
+sudo -u jeeves -H bash -c 'cd /opt/jeeves && bin/uv pip install --python .venv/bin/python --only-binary greenlet /opt/jeeves/src'
 sudo systemctl restart jeeves
 ```
 
@@ -143,6 +145,7 @@ sudo systemctl restart jeeves
 | Симптом | Что смотреть |
 |---|---|
 | `healthz` не отвечает | `systemctl status jeeves`, `journalctl -u jeeves -n 50`; `nginx -t`; порт `LISTEN_PORT` совпадает с `proxy_pass` |
+| `getWebhookInfo` показывает `SSL error … certificate verify failed` | сертификат vhost просрочен или не тот: `curl -svI https://jeeves.perm-bear.ru/healthz 2>&1 \| grep -iE "subject:\|expire date"`. Путь `ssl_certificate` в vhost должен вести в `/etc/letsencrypt/live/jeeves.perm-bear.ru/` (список: `sudo certbot certificates`). После правки: `nginx -t`, `reload`, затем переустановить вебхук (перезапуск сервиса или `setWebhook`). Накопившиеся апдейты можно сбросить параметром `drop_pending_updates=true`. Не проверяйте сертификат через `openssl s_client` из CentOS 7: старый OpenSSL ненадёжно передаёт SNI, ориентируйтесь на `curl -v` |
 | Сервис перезапускается каждые 5 с | в логе причина: чаще всего неверный `BOT_TOKEN` (Unauthorized) или нет доступа к БД |
 | `[Errno 98] address already in use` | порт занят: выберите другой `LISTEN_PORT` и поправьте `proxy_pass` |
 | Telegram получает 401 от webhook | `WEBHOOK_SECRET` в `.env` менялся после установки вебхука: перезапустите сервис, он поставит вебхук заново |
