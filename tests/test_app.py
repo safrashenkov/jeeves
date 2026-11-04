@@ -5,6 +5,7 @@ from aiohttp.test_utils import TestClient, TestServer
 from jeeves.app import build_dispatcher, create_app
 from jeeves.config import Settings
 from jeeves.db import Database
+from jeeves.handlers import Context
 
 
 @pytest.fixture
@@ -62,7 +63,7 @@ def group_update(text: str) -> dict:
 
 
 async def test_healthz_ok(settings, db, bot):
-    async with TestClient(TestServer(create_app(settings, db, bot))) as client:
+    async with TestClient(TestServer(create_app(settings, Context(db=db), bot))) as client:
         response = await client.get("/healthz")
 
         assert response.status == 200
@@ -70,7 +71,7 @@ async def test_healthz_ok(settings, db, bot):
 
 
 async def test_webhook_rejects_missing_secret(settings, db, bot):
-    async with TestClient(TestServer(create_app(settings, db, bot))) as client:
+    async with TestClient(TestServer(create_app(settings, Context(db=db), bot))) as client:
         response = await client.post(settings.webhook_path, json=group_update("Дживс, помощь"))
 
         assert response.status == 401
@@ -79,7 +80,7 @@ async def test_webhook_rejects_missing_secret(settings, db, bot):
 async def test_webhook_rejects_wrong_secret_and_accepts_right_one(settings, db, bot, calls):
     header = "X-Telegram-Bot-Api-Secret-Token"
     update = group_update("всем привет")
-    async with TestClient(TestServer(create_app(settings, db, bot))) as client:
+    async with TestClient(TestServer(create_app(settings, Context(db=db), bot))) as client:
         wrong = await client.post(settings.webhook_path, json=update, headers={header: "nope"})
         right = await client.post(settings.webhook_path, json=update, headers={header: "s3cret"})
 
@@ -88,7 +89,7 @@ async def test_webhook_rejects_wrong_secret_and_accepts_right_one(settings, db, 
 
 
 async def test_dispatcher_replies_to_news_on(db, bot, calls):
-    dp = build_dispatcher(db, "jeeves_bot")
+    dp = build_dispatcher(Context(db=db), "jeeves_bot")
 
     await dp.feed_raw_update(bot, group_update("Дживс, включи новости"))
 
@@ -97,7 +98,7 @@ async def test_dispatcher_replies_to_news_on(db, bot, calls):
 
 
 async def test_dispatcher_ignores_unaddressed_group_message(db, bot, calls):
-    dp = build_dispatcher(db, "jeeves_bot")
+    dp = build_dispatcher(Context(db=db), "jeeves_bot")
 
     await dp.feed_raw_update(bot, group_update("всем привет, кто на рейд?"))
 
@@ -106,7 +107,7 @@ async def test_dispatcher_ignores_unaddressed_group_message(db, bot, calls):
 
 
 async def test_dispatcher_survives_message_without_text(db, bot, calls):
-    dp = build_dispatcher(db, "jeeves_bot")
+    dp = build_dispatcher(Context(db=db), "jeeves_bot")
     update = group_update("x")
     del update["message"]["text"]
     update["message"]["sticker"] = {

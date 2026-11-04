@@ -60,6 +60,15 @@ def test_format_item_escapes_and_truncates():
     assert long_text.endswith("\nhttp://x/very/long")
 
 
+def test_format_item_truncation_never_splits_entities_or_empties_title():
+    text = format_item(NewsItem("&<" * 3000, "http://x", 1))
+
+    assert len(text) <= 4096
+    assert text.startswith("&amp;&lt;")
+    assert text.endswith("\nhttp://x")
+    assert "&am\n" not in text and "&l\n" not in text
+
+
 class FakeResponse:
     def __init__(self, data: bytes):
         self._data = data

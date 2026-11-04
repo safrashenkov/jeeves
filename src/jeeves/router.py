@@ -7,6 +7,13 @@ PHRASES: list[tuple[str, str]] = [
     ("отключи новости", "news_off"),
     ("помощь", "help"),
     ("help", "help"),
+    ("жетон", "token"),
+    ("токен", "token"),
+    ("шут", "wowlol"),
+    ("смеятьс", "wowlol"),
+    ("wowlol", "wowlol"),
+    ("фап", "wowfap"),
+    ("fap", "wowfap"),
 ]
 
 SLASH: dict[str, str] = {
@@ -14,6 +21,11 @@ SLASH: dict[str, str] = {
     "help": "help",
     "news_on": "news_on",
     "news_off": "news_off",
+    "token": "token",
+    "joke": "wowlol",
+    "wowlol": "wowlol",
+    "fap": "wowfap",
+    "wowfap": "wowfap",
 }
 
 _PUNCTUATION = str.maketrans("", "", ",?.!")

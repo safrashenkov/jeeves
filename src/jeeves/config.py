@@ -21,6 +21,8 @@ class Settings(BaseSettings):
     db_password: str
     db_name: str = "wa"
     news_interval_seconds: int = 300
+    blizzard_client_id: str = ""
+    blizzard_client_secret: str = ""
 
     @property
     def webhook_url(self) -> str:

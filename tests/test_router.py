@@ -24,6 +24,16 @@ PRIVATE = 42
         ("Дживс, расскажи анекдот", GROUP, "unknown"),
         ("привет", PRIVATE, "unknown"),
         ("просто болтаем", GROUP, None),
+        ("Дживс, сколько жетон?", GROUP, "token"),
+        ("токен", PRIVATE, "token"),
+        ("Дживс, расскажи шутку", GROUP, "wowlol"),
+        ("Дживс, смеяться хочу", GROUP, "wowlol"),
+        ("Дживс, wowlol", GROUP, "wowlol"),
+        ("Дживс, фап", GROUP, "wowfap"),
+        ("Дживс, fap", GROUP, "wowfap"),
+        ("/token@jeeves_bot", GROUP, "token"),
+        ("/joke", GROUP, "wowlol"),
+        ("/fap", GROUP, "wowfap"),
     ],
 )
 def test_parse_command(text, chat_id, expected):

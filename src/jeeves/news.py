@@ -1,11 +1,12 @@
 import asyncio
 import calendar
-import html
 import logging
 from dataclasses import dataclass
 
 import aiohttp
 import feedparser
+
+from jeeves.textfit import fit_escaped
 
 log = logging.getLogger(__name__)
 
@@ -71,9 +72,4 @@ def select_new(items: list[NewsItem], since: int) -> list[NewsItem]:
 
 def format_item(item: NewsItem) -> str:
     tail = "\n" + item.link
-    title = item.title
-    text = html.escape(title) + tail
-    while len(text) > MESSAGE_LIMIT:
-        title = title[: max(0, len(title) - (len(text) - MESSAGE_LIMIT))]
-        text = html.escape(title) + tail
-    return text
+    return fit_escaped(item.title, MESSAGE_LIMIT - len(tail)) + tail

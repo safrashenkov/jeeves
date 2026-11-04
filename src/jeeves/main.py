@@ -1,4 +1,5 @@
 import asyncio
+import functools
 import logging
 import time
 
@@ -9,9 +10,12 @@ from aiogram.enums import ParseMode
 from aiohttp import web
 
 from jeeves.alerts import AdminNotifier
-from jeeves.app import create_app
+from jeeves.blizzard import BlizzardClient
+from jeeves.app import bot_commands, create_app
 from jeeves.config import get_settings
 from jeeves.db import Database
+from jeeves.handlers import Context
+from jeeves.jokes import fetch_joke
 from jeeves.news import FEEDS, fetch_all
 from jeeves.news_job import news_loop, run_news_cycle
 
@@ -35,7 +39,18 @@ async def serve() -> None:
     async def run_once() -> int:
         return await run_news_cycle(db, lambda: fetch_all(http, FEEDS), send_news, int(time.time()))
 
-    app = create_app(settings, db, bot)
+    blizzard = None
+    if settings.blizzard_client_id and settings.blizzard_client_secret:
+        blizzard = BlizzardClient(http, settings.blizzard_client_id, settings.blizzard_client_secret)
+    else:
+        log.warning("BLIZZARD_CLIENT_ID/SECRET не заданы: команда «жетон» будет недоступна")
+    ctx = Context(
+        db=db,
+        token_price=blizzard.get_token_price if blizzard else None,
+        joke=functools.partial(fetch_joke, http),
+    )
+
+    app = create_app(settings, ctx, bot)
     runner = web.AppRunner(app)
     news_task: asyncio.Task | None = None
     try:
@@ -49,6 +64,10 @@ async def serve() -> None:
             drop_pending_updates=False,
         )
         log.info("Вебхук установлен: %s", settings.webhook_url)
+        try:
+            await bot.set_my_commands(bot_commands())
+        except Exception:
+            log.exception("Не удалось установить меню команд")  # не критично, бот работает и без него
         news_task = asyncio.create_task(news_loop(run_once, settings.news_interval_seconds, notifier.notify))
         await asyncio.Event().wait()
     finally:
