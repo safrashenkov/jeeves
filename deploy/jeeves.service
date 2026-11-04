@@ -1,0 +1,19 @@
+[Unit]
+Description=Jeeves — Telegram-бот для игроков WoW
+After=network-online.target mariadb.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=jeeves
+Group=jeeves
+WorkingDirectory=/opt/jeeves
+EnvironmentFile=/opt/jeeves/.env
+ExecStart=/opt/jeeves/.venv/bin/python -m jeeves.main
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
